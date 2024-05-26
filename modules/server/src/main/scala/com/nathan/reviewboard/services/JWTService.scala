@@ -3,8 +3,11 @@ package com.nathan.reviewboard.services
 import com.auth0.jwt.JWTVerifier.BaseVerification
 import com.auth0.jwt.{JWT, JWTVerifier}
 import com.auth0.jwt.algorithms.Algorithm
+import com.nathan.reviewboard.config.{Configs, JWTConfig}
 import com.nathan.reviewboard.domain.data.{User, UserID, UserToken}
+import com.typesafe.config.ConfigFactory
 import zio.*
+import zio.config.typesafe.TypesafeConfig
 
 import java.time.Instant
 
@@ -13,13 +16,11 @@ trait JWTService {
   def verifyToken(token: String): Task[UserID]
 }
 
-class JWTServiceLive (clock: java.time.Clock) extends JWTService {
-  private val SECRET = "secret" // TODO pass this from config
-  private val TTL = 30 * 24 * 3600 // TODO pass this from config
+class JWTServiceLive (jwtConfig: JWTConfig, clock: java.time.Clock) extends JWTService {
   private val ISSUER = "ezra.com"
   private val CLAIM_USERNAME = "username"
 
-  private val algorithm = Algorithm.HMAC512(SECRET)
+  private val algorithm = Algorithm.HMAC512(jwtConfig.secret)
 
   private val verifier: JWTVerifier =
     JWT
@@ -31,7 +32,7 @@ class JWTServiceLive (clock: java.time.Clock) extends JWTService {
   override def createToken(user: User): Task[UserToken] =
     for {
     now <- ZIO.attempt(clock.instant())
-    expiration <- ZIO.succeed(now.plusSeconds(TTL))
+    expiration <- ZIO.succeed(now.plusSeconds(jwtConfig.ttl))
     token <- ZIO.attempt(
       JWT
         .create()
@@ -59,9 +60,16 @@ class JWTServiceLive (clock: java.time.Clock) extends JWTService {
 
 object JWTServiceLive {
   val layer = ZLayer {
-    Clock.javaClock.map(clock => new JWTServiceLive(clock))
+    for {
+      jwtConfig <- ZIO.service[JWTConfig]
+      clock <- Clock.javaClock
+    } yield new JWTServiceLive(jwtConfig, clock)
   }
+
+  val configuredLayer =
+    Configs.makeConfigLayer[JWTConfig]("rockthejvm.jwt") >>> layer
 }
+
 
 object JWTServiceDemo extends ZIOAppDefault {
   val program = for {
@@ -74,7 +82,9 @@ object JWTServiceDemo extends ZIOAppDefault {
 
   override def run: ZIO[Any & (ZIOAppArgs & Scope), Any, Any] =
     program.provide(
-      JWTServiceLive.layer
+      JWTServiceLive.layer,
+      //ZLayer.succeed(JWTConfig("secret", 30 * 24 * 3600))
+      Configs.makeConfigLayer[JWTConfig]("nath.jwt")
     )
 }
 
