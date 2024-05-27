@@ -1,7 +1,7 @@
 package com.nathan.reviewboard.http.endpoints
 
 import com.nathan.reviewboard.domain.data.UserToken
-import com.nathan.reviewboard.http.requests.{DeleteAccountRequest, LoginRequest, RegisterUserAccount, UpdatePasswordRequest}
+import com.nathan.reviewboard.http.requests.{DeleteAccountRequest, ForgotPasswordRequest, LoginRequest, RecoverPasswordRequest, RegisterUserAccount, UpdatePasswordRequest}
 import com.nathan.reviewboard.http.responses.UserResponse
 import sttp.tapir.*
 import sttp.tapir.json.zio.*
@@ -54,6 +54,27 @@ trait UserEndpoints extends BaseEndpoint {
       .in(jsonBody[LoginRequest])
       .out(jsonBody[UserToken])
 
+  // forgot password flow
+  // POST /users/forgot { email } - 200 OK
+  val forgotPasswordEndpoint =
+    baseEndpoint
+      .tag("Users")
+      .name("forgot password")
+      .description("Trigger email for password recovery")
+      .in("users" / "forgot")
+      .post
+      .in(jsonBody[ForgotPasswordRequest])
 
+  // recover password
+  // POST /users/recover { email, token, newPassword }
+  val recoverPasswordEndpoint =
+    baseEndpoint
+      .tag("Users")
+      .name("recover password")
+      .description("Set new password based on OTP")
+      .in("users" / "recover")
+      .post
+      .in(jsonBody[RecoverPasswordRequest])
+  
 }
 

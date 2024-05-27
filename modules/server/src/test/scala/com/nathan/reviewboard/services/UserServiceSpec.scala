@@ -1,16 +1,16 @@
 package com.nathan.reviewboard.services
 
 import com.nathan.reviewboard.domain.data.{User, UserID, UserToken}
-import com.nathan.reviewboard.repositories.UserRepository
+import com.nathan.reviewboard.repositories.{RecoveryTokensRepository, UserRepository}
 import zio.*
 import zio.test.*
 
 object UserServiceSpec extends ZIOSpecDefault {
 
   println(UserServiceLive.Hasher.generateHash("ezra"))
-  println(UserServiceLive.Hasher.validateHash("ezra", 
+  println(UserServiceLive.Hasher.validateHash("ezra",
     "1000:D56F98C6193A3CB77E4549CE2CF3C996FCDB69831FC59F64:652ECB3401A283A8F4D5C21389480DCE99D19AA3C89EA380"))
-  val hashedPassword = 
+  val hashedPassword =
     "1000:D56F98C6193A3CB77E4549CE2CF3C996FCDB69831FC59F64:652ECB3401A283A8F4D5C21389480DCE99D19AA3C89EA380"
 
   val ezra = User(
@@ -46,6 +46,27 @@ object UserServiceSpec extends ZIOSpecDefault {
         user
       }
 
+    }
+  }
+
+  val stubEmailsLayer = ZLayer.succeed {
+    new EmailService {
+      override def sendEmail(to: String, subject: String, content: String): Task[Unit] = ZIO.unit
+    }
+  }
+
+  val stubTokenRepoLayer = ZLayer.succeed {
+    new RecoveryTokensRepository {
+      val db = collection.mutable.Map[String, String]()
+
+      override def checkToken(email: String, token: String): Task[Boolean] =
+        ZIO.succeed(db.get(email).contains(token))
+
+      override def getToken(email: String): Task[Option[String]] = ZIO.attempt {
+        val token = util.Random.alphanumeric.take(8).mkString.toUpperCase()
+        db += (email -> token)
+        Some(token)
+      }
     }
   }
 
@@ -112,11 +133,13 @@ object UserServiceSpec extends ZIOSpecDefault {
           user <- service.deleteUser(ezra.email, "ezra")
         } yield assertTrue(user.email == ezra.email)
       }
-      
+
     ).provide(
       UserServiceLive.layer,
       stubJwtLayer,
-      stubRepoLayer
+      stubRepoLayer,
+      stubEmailsLayer,
+      stubTokenRepoLayer
     )
 
 }

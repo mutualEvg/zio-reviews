@@ -67,7 +67,7 @@ object JWTServiceLive {
   }
 
   val configuredLayer =
-    Configs.makeConfigLayer[JWTConfig]("rockthejvm.jwt") >>> layer
+    Configs.makeConfigLayer[JWTConfig]("nath.jwt") >>> layer
 }
 
 

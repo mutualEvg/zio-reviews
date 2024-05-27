@@ -30,3 +30,9 @@ CREATE TABLE IF NOT EXISTS users (
    email TEXT UNIQUE NOT NULL,
    hashed_password TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS recovery_tokens (
+  email text PRIMARY KEY,
+  token text NOT NULL,
+  expiration BIGINT NOT NULL
+);
