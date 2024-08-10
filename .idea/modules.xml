@@ -3,6 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.app.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.common.common-sources.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.common.common-sources.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.common.commonJS.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.common.commonJS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.common.commonJVM.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.common.commonJVM.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.foundations.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.foundations.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.server.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.server.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.zio-rite-of-passage-build.iml" filepath="$PROJECT_DIR$/.idea/modules/zio-rite-of-passage.zio-rite-of-passage-build.iml" />

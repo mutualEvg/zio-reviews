@@ -1,8 +1,8 @@
 package com.nathan.reviewboard.http.controllers
 
-import com.nathan.reviewboard.domain.data.Company
+import com.nathan.reviewboard.domain.data.{Company, User, UserID, UserToken}
 import com.nathan.reviewboard.http.requests.CreateCompanyRequest
-import com.nathan.reviewboard.services.CompanyService
+import com.nathan.reviewboard.services.{CompanyService, JWTService}
 import zio.*
 import zio.test.*
 import sttp.client3.*
@@ -46,6 +46,13 @@ object CompanyControllerSpec extends ZIOSpecDefault {
       )
     } yield backendStub
 
+  private val jwtServiceStub = new JWTService {
+    override def createToken(user: User): Task[UserToken] =
+      ZIO.succeed(UserToken(user.email, "ALL_IS_GOOD", 999999999L))
+
+    override def verifyToken(token: String): Task[UserID] =
+      ZIO.succeed(UserID(1, "ezra@haskell.com"))
+  }
 
   override def spec: Spec[TestEnvironment & Scope, Any] =
     suite("CompanyControllerSpec")(
@@ -63,6 +70,7 @@ object CompanyControllerSpec extends ZIOSpecDefault {
           response <- basicRequest
             .post(uri"/companies")
             .body(CreateCompanyRequest("RZK", "rzk.com").toJson)
+            .header("Authorization", "Bearer azaza mocked shit")
             .send(backendStub)
         } yield response.body
         // run http request
@@ -114,7 +122,10 @@ object CompanyControllerSpec extends ZIOSpecDefault {
           }
         )
       },
-    ).provide(ZLayer.succeed(serviceStub))
+    ).provide(
+      ZLayer.succeed(serviceStub),
+      ZLayer.succeed(jwtServiceStub)
+    )
 }
 
 

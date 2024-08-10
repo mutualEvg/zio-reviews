@@ -1,14 +1,14 @@
 package com.nathan.reviewboard.http.controllers
 
 import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
-import com.nathan.reviewboard.domain.data.Company
-import com.nathan.reviewboard.services.CompanyService
+import com.nathan.reviewboard.domain.data.{Company, UserID}
+import com.nathan.reviewboard.services.{CompanyService, JWTService}
 import sttp.tapir.server.ServerEndpoint
 import zio.{Task, ZIO}
 
 import collection.mutable
 
-class CompanyController private (service: CompanyService) extends BaseController with CompanyEndpoints {
+class CompanyController private (service: CompanyService, jwtService: JWTService) extends BaseController with CompanyEndpoints {
   // TODO implementations
 
   // in-memory "database"
@@ -40,9 +40,11 @@ class CompanyController private (service: CompanyService) extends BaseController
 //        }
 //    }
 
-  val create: ServerEndpoint[Any, Task] = createEndpoint.serverLogic { req =>
-    service.create(req).either
-  }
+  val create: ServerEndpoint[Any, Task] = createEndpoint
+    .serverSecurityLogic[UserID, Task](token => jwtService.verifyToken(token).either)
+    .serverLogic { userID => req =>
+      service.create(req).either
+    }
 
   val getAll: ServerEndpoint[Any, Task] =
     getAllEndpoint.serverLogic(_ => service.getAll.either)
@@ -65,5 +67,6 @@ object CompanyController {
   //val makeZIO = ZIO.succeed(new CompanyController)
   val makeZIO = for {
     service <- ZIO.service[CompanyService]
-  } yield new CompanyController(service)
+    jwtService <- ZIO.service[JWTService]
+  } yield new CompanyController(service, jwtService)
 }

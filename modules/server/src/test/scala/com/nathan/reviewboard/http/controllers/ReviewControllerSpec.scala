@@ -1,8 +1,8 @@
 package com.nathan.reviewboard.http.controllers
 
-import com.nathan.reviewboard.domain.data.{Company, Review}
+import com.nathan.reviewboard.domain.data.{Company, Review, User, UserID, UserToken}
 import com.nathan.reviewboard.http.requests.{CreateCompanyRequest, CreateReviewRequest}
-import com.nathan.reviewboard.services.{CompanyService, ReviewService}
+import com.nathan.reviewboard.services.{CompanyService, JWTService, ReviewService}
 import zio.*
 import zio.test.*
 import sttp.client3.*
@@ -18,7 +18,7 @@ import com.nathan.reviewboard.syntax.*
 
 import java.time.Instant
 
-object ReviewControllerSoec extends ZIOSpecDefault {
+object ReviewControllerSpec extends ZIOSpecDefault {
 
   val goodReview = Review(
     id = 1L,
@@ -56,6 +56,14 @@ object ReviewControllerSoec extends ZIOSpecDefault {
     }
   }
 
+  private val jwtServiceStub = new JWTService {
+    override def createToken(user: User): Task[UserToken] =
+      ZIO.succeed(UserToken(user.email, "ALL_IS_GOOD", 999999999L))
+
+    override def verifyToken(token: String): Task[UserID] =
+      ZIO.succeed(UserID(1, "ezra@haskell.com"))
+  }
+
   private def backendStubZIO(endpointFun: ReviewController => ServerEndpoint[Any, Task]) =
     for {
       controller <- ReviewController.makeZIO
@@ -82,6 +90,7 @@ object ReviewControllerSoec extends ZIOSpecDefault {
               wouldRecommend = 10,
               review = "all good"
             ).toJson)
+            .header("Authorization", "Bearer azaza mocked shit")
             .send(backendStub)
         } yield response.body
 
@@ -125,6 +134,9 @@ object ReviewControllerSoec extends ZIOSpecDefault {
               .contains(List())
         )
       }
-    ).provide(ZLayer.succeed(serviceStub))
+    ).provide(
+      ZLayer.succeed(serviceStub),
+      ZLayer.succeed(jwtServiceStub)
+    )
 
 }

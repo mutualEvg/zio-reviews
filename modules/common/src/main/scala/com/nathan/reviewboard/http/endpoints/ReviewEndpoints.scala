@@ -10,7 +10,7 @@ import com.nathan.reviewboard.domain.data.Review
 
 trait ReviewEndpoints extends BaseEndpoint {
 
-  val createEndpoint = baseEndpoint
+  val createEndpoint = secureBaseEndpoint
     .tag("Reviews")
     .name("create")
     .description("Add a review for a company")

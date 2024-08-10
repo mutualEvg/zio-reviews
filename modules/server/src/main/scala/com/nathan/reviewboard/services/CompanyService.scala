@@ -6,7 +6,6 @@ import scala.collection.mutable
 import zio.*
 
 import collection.mutable
-import com.nathan.reviewboard.domain.data.*
 import com.nathan.reviewboard.http.requests.CreateCompanyRequest
 import com.nathan.reviewboard.repositories.CompanyRepository
 
