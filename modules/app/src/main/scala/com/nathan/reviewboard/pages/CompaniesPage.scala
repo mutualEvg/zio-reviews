@@ -1,21 +1,24 @@
 package com.nathan.reviewboard.pages
 
 import com.nathan.reviewboard.common.Constants.companyLogoPlaceholder
-import com.raquo.laminar.api.L.{*, given}
+import com.raquo.laminar.api.L.{given, *}
 import com.raquo.laminar.codecs.*
 import org.scalajs.dom
 import frontroute.*
 import com.nathan.reviewboard.components.*
 import com.nathan.reviewboard.domain.data.*
 import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
-import com.nathan.reviewboard.domain.data._
+import com.nathan.reviewboard.domain.data.*
 import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
+import sttp.capabilities.WebSockets
+import sttp.capabilities.zio.ZioStreams
 import sttp.client3.impl.zio.FetchZioBackend
-import sttp.client3._
+import sttp.client3.*
+import sttp.model.Uri
+import sttp.tapir.Endpoint
 import sttp.tapir.client.sttp.SttpClientInterpreter
-
-import zio._
-
+import zio.*
+import com.nathan.reviewboard.core.ZJS._
 
 object CompaniesPage {
 
@@ -32,30 +35,17 @@ object CompaniesPage {
   )
 
   val companiesBus = EventBus[List[Company]]()
+
   def performBackendCall(): Unit = {
-    // ZIO endpoints
-    val companyEndpoints = new CompanyEndpoints {}
-    val theEndpoint = companyEndpoints.getAllEndpoint
-    val backend = FetchZioBackend()
-    val interpreter: SttpClientInterpreter = SttpClientInterpreter()
-    val request = interpreter
-      .toRequestThrowDecodeFailures(theEndpoint, Some(uri"http://localhost:8080"))
-      .apply(())
-
-    val companiesZIO = backend.send(request).map(_.body).absolve
-
-    // run the ZIO effect
-    Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe.fork(
-        companiesZIO.tap(list => ZIO.attempt(companiesBus.emit(list)))
-      )
-    }
+    val companiesZIO = backendCall(_.company.getAllEndpoint(()))
+    companiesZIO.emitTo(companiesBus)
   }
-
 
   def apply() =
     sectionTag(
-      onMountCallback(_ => performBackendCall()),
+      onMountCallback(
+        _ => performBackendCall()
+      ),
       cls := "section-1",
       div(
         cls := "container company-list-hero",
@@ -74,10 +64,13 @@ object CompaniesPage {
           ),
           div(
             cls := "col-lg-8",
-            children <-- companiesBus.events.map{_.map{ comp =>
-              println(s"comp = $comp")
-              renderCompany(comp)
-            }}
+            children <-- companiesBus.events.map {
+              _.map {
+                comp =>
+                  println(s"comp = $comp")
+                  renderCompany(comp)
+              }
+            }
 //            renderCompany(dummyCompany),
 //            renderCompany(dummyCompany)
           )
@@ -102,7 +95,6 @@ object CompaniesPage {
       )
     )
 
-
   private def fullLocationString(company: Company): String =
     (company.location, company.country) match {
       case (Some(location), Some(country)) => s"$location, $country"
@@ -111,7 +103,6 @@ object CompaniesPage {
       case (None, None)                    => "N/A"
     }
 
-
   private def renderOverview(company: Company) =
     div(
       cls := "company-summary",
@@ -119,21 +110,19 @@ object CompaniesPage {
       renderDetail("tags", company.tags.mkString(", "))
     )
 
-
   private def renderAction(company: Company) =
     div(
       cls := "jvm-recent-companies-card-btn-apply",
       a(
-        href := company.url,
+        href   := company.url,
         target := "blank",
         button(
           `type` := "button",
-          cls := "btn btn-danger rock-action-btn",
+          cls    := "btn btn-danger rock-action-btn",
           "Website"
         )
       )
     )
-
 
   def renderCompany(company: Company) =
     div(
