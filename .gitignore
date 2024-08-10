@@ -20,3 +20,4 @@ project/target
 
 # Ignore Visual Studio Code metadata
 .vscode/
+/project/target/
