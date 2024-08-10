@@ -10,6 +10,7 @@ import io.getquill.SnakeCase
 import io.getquill.jdbczio.Quill
 import sttp.tapir.endpoint
 import sttp.tapir.*
+import sttp.tapir.server.interceptor.cors.CORSInterceptor
 import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
 import zio.*
 import zio.http.Server
@@ -20,7 +21,9 @@ object Application extends ZIOAppDefault {
     endpoints <- HttpApi.endpointsZIO
     _ <- Server.serve(
       ZioHttpInterpreter(
-        ZioHttpServerOptions.default
+        ZioHttpServerOptions.default.appendInterceptor(
+          CORSInterceptor.default
+        )
       ).toHttp(endpoints)
     )
     _ <- Console.printLine("Rock the JVM!")

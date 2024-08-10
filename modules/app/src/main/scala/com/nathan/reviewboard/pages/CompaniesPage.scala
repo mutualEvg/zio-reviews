@@ -8,6 +8,14 @@ import frontroute.*
 import com.nathan.reviewboard.components.*
 import com.nathan.reviewboard.domain.data.*
 import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
+import com.nathan.reviewboard.domain.data._
+import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
+import sttp.client3.impl.zio.FetchZioBackend
+import sttp.client3._
+import sttp.tapir.client.sttp.SttpClientInterpreter
+
+import zio._
+
 
 object CompaniesPage {
 
@@ -23,9 +31,27 @@ object CompaniesPage {
     List("space", "scala")
   )
 
+  val companiesBus = EventBus[List[Company]]()
   def performBackendCall(): Unit = {
+    // ZIO endpoints
     val companyEndpoints = new CompanyEndpoints {}
+    val theEndpoint = companyEndpoints.getAllEndpoint
+    val backend = FetchZioBackend()
+    val interpreter: SttpClientInterpreter = SttpClientInterpreter()
+    val request = interpreter
+      .toRequestThrowDecodeFailures(theEndpoint, Some(uri"http://localhost:8080"))
+      .apply(())
+
+    val companiesZIO = backend.send(request).map(_.body).absolve
+
+    // run the ZIO effect
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe.fork(
+        companiesZIO.tap(list => ZIO.attempt(companiesBus.emit(list)))
+      )
+    }
   }
+
 
   def apply() =
     sectionTag(
@@ -48,8 +74,12 @@ object CompaniesPage {
           ),
           div(
             cls := "col-lg-8",
-            renderCompany(dummyCompany),
-            renderCompany(dummyCompany)
+            children <-- companiesBus.events.map{_.map{ comp =>
+              println(s"comp = $comp")
+              renderCompany(comp)
+            }}
+//            renderCompany(dummyCompany),
+//            renderCompany(dummyCompany)
           )
         )
       )
