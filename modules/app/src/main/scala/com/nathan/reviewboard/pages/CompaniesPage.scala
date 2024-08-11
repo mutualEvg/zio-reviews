@@ -1,24 +1,11 @@
 package com.nathan.reviewboard.pages
 
 import com.nathan.reviewboard.common.Constants.companyLogoPlaceholder
-import com.raquo.laminar.api.L.{given, *}
-import com.raquo.laminar.codecs.*
-import org.scalajs.dom
-import frontroute.*
 import com.nathan.reviewboard.components.*
+import com.nathan.reviewboard.core.ZJS.*
 import com.nathan.reviewboard.domain.data.*
-import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
-import com.nathan.reviewboard.domain.data.*
-import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
-import sttp.capabilities.WebSockets
-import sttp.capabilities.zio.ZioStreams
-import sttp.client3.impl.zio.FetchZioBackend
+import com.raquo.laminar.api.L.{*, given}
 import sttp.client3.*
-import sttp.model.Uri
-import sttp.tapir.Endpoint
-import sttp.tapir.client.sttp.SttpClientInterpreter
-import zio.*
-import com.nathan.reviewboard.core.ZJS._
 
 object CompaniesPage {
 
@@ -37,7 +24,7 @@ object CompaniesPage {
   val companiesBus = EventBus[List[Company]]()
 
   def performBackendCall(): Unit = {
-    val companiesZIO = backendCall(_.company.getAllEndpoint(()))
+    val companiesZIO = useBackend(_.company.getAllEndpoint(()))
     companiesZIO.emitTo(companiesBus)
   }
 
