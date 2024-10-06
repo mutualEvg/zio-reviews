@@ -1,6 +1,6 @@
 package com.nathan.reviewboard.repositories
 
-import com.nathan.reviewboard.domain.data.Company
+import com.nathan.reviewboard.domain.data.{Company, CompanyFilter}
 import zio.*
 import io.getquill.*
 import io.getquill.jdbczio.Quill
@@ -12,21 +12,23 @@ trait CompanyRepository {
   def getById(id: Long): Task[Option[Company]]
   def getBySlug(slug: String): Task[Option[Company]]
   def get: Task[List[Company]]
+  def uniqueAttributes: Task[CompanyFilter]
 }
 
 class CompanyRepositoryLive private (quill: Quill.Postgres[SnakeCase]) extends CompanyRepository {
   import quill._
 
-  inline given schema: SchemaMeta[Company] = schemaMeta[Company]("companies")
+  inline given schema: SchemaMeta[Company]  = schemaMeta[Company]("companies")
   inline given insMeta: InsertMeta[Company] = insertMeta[Company](_.id)
-  inline given upMeta: UpdateMeta[Company] = updateMeta[Company](_.id)
-
+  inline given upMeta: UpdateMeta[Company]  = updateMeta[Company](_.id)
 
   override def create(company: Company): Task[Company] =
     run {
       query[Company]
         .insertValue(lift(company))
-        .returning(r => r)
+        .returning(
+          r => r
+        )
     }
   override def getById(id: Long): Task[Option[Company]] =
     run {
@@ -47,7 +49,9 @@ class CompanyRepositoryLive private (quill: Quill.Postgres[SnakeCase]) extends C
         query[Company]
           .filter(_.id == lift(id))
           .updateValue(lift(op(current)))
-          .returning(r => r)
+          .returning(
+            r => r
+          )
       }
     } yield updated
   override def delete(id: Long): Task[Company] =
@@ -55,21 +59,36 @@ class CompanyRepositoryLive private (quill: Quill.Postgres[SnakeCase]) extends C
       query[Company]
         .filter(_.id == lift(id))
         .delete
-        .returning(r => r)
+        .returning(
+          r => r
+        )
     }
+
+  override def uniqueAttributes: Task[CompanyFilter] =
+    for {
+      locations  <- run(query[Company].map(_.location).distinct).map(_.flatMap(_.toList))
+      countries  <- run(query[Company].map(_.country).distinct).map(_.flatMap(_.toList))
+      industries <- run(query[Company].map(_.industry).distinct).map(_.flatMap(_.toList))
+      tags       <- run(query[Company].map(_.tags)).map(_.flatten.toSet.toList)
+    } yield CompanyFilter(locations, countries, industries, tags)
+
 }
 
 object CompanyRepositoryLive {
   val layer = ZLayer {
     // maybe speciffy SnakeCase.type
-    ZIO.service[Quill.Postgres[SnakeCase]].map(quill => CompanyRepositoryLive(quill))
+    ZIO
+      .service[Quill.Postgres[SnakeCase]]
+      .map(
+        quill => CompanyRepositoryLive(quill)
+      )
   }
 }
 
 object CompanyRepositoryDemo extends ZIOAppDefault {
   val program = for {
     repo <- ZIO.service[CompanyRepository]
-    _ <- repo.create(Company(-1L, "rzk", "RZK", "rzk.com"))
+    _    <- repo.create(Company(-1L, "rzk", "RZK", "rzk.com"))
   } yield ()
 
   override def run: ZIO[Any & (ZIOAppArgs & Scope), Any, Any] =
@@ -79,5 +98,3 @@ object CompanyRepositoryDemo extends ZIOAppDefault {
       Quill.DataSource.fromPrefix("nath.db")
     )
 }
-
-

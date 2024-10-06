@@ -4,9 +4,9 @@ import com.nathan.reviewboard.http.requests.CreateCompanyRequest
 import sttp.tapir.*
 import sttp.tapir.json.zio.jsonBody
 import zio.*
-import sttp.tapir.json.zio._
-import sttp.tapir.generic.auto._
-import com.nathan.reviewboard.domain.data.Company
+import sttp.tapir.json.zio.*
+import sttp.tapir.generic.auto.*
+import com.nathan.reviewboard.domain.data.{Company, CompanyFilter}
 
 trait CompanyEndpoints extends BaseEndpoint {
   val createEndpoint =
@@ -36,5 +36,14 @@ trait CompanyEndpoints extends BaseEndpoint {
       .in("companies" / path[String]("id"))
       .get
       .out(jsonBody[Option[Company]])
+
+  val allFiltersEndpoint =
+    baseEndpoint
+      .tag("Companies")
+      .name("allFilters")
+      .description("Get all possible search filters")
+      .in("companies" / "filters")
+      .get
+      .out(jsonBody[CompanyFilter])
 
 }

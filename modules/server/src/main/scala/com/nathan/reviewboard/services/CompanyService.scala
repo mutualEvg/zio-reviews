@@ -1,6 +1,6 @@
 package com.nathan.reviewboard.services
 
-import com.nathan.reviewboard.domain.data.Company
+import com.nathan.reviewboard.domain.data.{Company, CompanyFilter}
 
 import scala.collection.mutable
 import zio.*
@@ -16,6 +16,7 @@ trait CompanyService {
   def getAll: Task[List[Company]]
   def getById(id: Long): Task[Option[Company]]
   def getBySlug(slug: String): Task[Option[Company]]
+  def allFilters: Task[CompanyFilter]
 
 }
 // FIXME can be removed if required
@@ -35,6 +36,8 @@ class CompanyServiceLive private(repo: CompanyRepository) extends CompanyService
 
   override def getBySlug(slug: String): Task[Option[Company]] =
     repo.getBySlug(slug)
+
+  override def allFilters: Task[CompanyFilter] = repo.uniqueAttributes
 }
 object CompanyServiceLive {
   val layer = ZLayer {

@@ -1,6 +1,6 @@
 package com.nathan.reviewboard.http.controllers
 
-import com.nathan.reviewboard.domain.data.{Company, User, UserID, UserToken}
+import com.nathan.reviewboard.domain.data.{Company, CompanyFilter, User, UserID, UserToken}
 import com.nathan.reviewboard.http.requests.CreateCompanyRequest
 import com.nathan.reviewboard.services.{CompanyService, JWTService}
 import zio.*
@@ -35,6 +35,8 @@ object CompanyControllerSpec extends ZIOSpecDefault {
       if (slug == rzk.slug) Some(rzk)
       else None
     )
+
+    override def allFilters: Task[CompanyFilter] = ZIO.succeed(CompanyFilter())
   }
   private def backendStubZIO(endpointFun: CompanyController => ServerEndpoint[Any, Task]) =
     for {

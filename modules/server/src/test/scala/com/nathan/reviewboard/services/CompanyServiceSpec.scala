@@ -1,5 +1,5 @@
 package com.nathan.reviewboard.services
-import com.nathan.reviewboard.domain.data.Company
+import com.nathan.reviewboard.domain.data.{Company, CompanyFilter}
 import com.nathan.reviewboard.http.requests.CreateCompanyRequest
 import com.nathan.reviewboard.repositories.CompanyRepository
 import zio.*
@@ -43,6 +43,7 @@ object CompanyServiceSpec extends ZIOSpecDefault {
     override def get: Task[List[Company]] =
       ZIO.succeed(db.values.toList)
 
+    override def uniqueAttributes: Task[CompanyFilter] = ZIO.succeed(CompanyFilter())
   })
 
   override def spec: Spec[TestEnvironment & Scope, Any] =
