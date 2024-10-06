@@ -24,15 +24,37 @@ import sttp.client3.*
  *       b. refetch companies when user clicks the filter
  */
 
-object FilterPanel {
+class FilterPanel {
 
+  case class CheckValueEvent(groupName: String, value: String, checked: Boolean)
   val GROUP_LOCATIONS = "Locations"
   val GROUP_COUNTRIES = "Countries"
   val GROUP_INDUSTRIES = "Industries"
   val GROUP_TAGS = "Tags"
 
   val possibleFilter = Var[CompanyFilter](CompanyFilter.empty)
+  val checkEvents = EventBus[CheckValueEvent]()
+  val clicks = EventBus[Unit]() // clicks on the apply button
+  val dirty = clicks.events.mapTo(false).mergeWith(checkEvents.events.mapTo(true)) // emits either true or false depending on whether to show "apply" or not
 
+  val state: Signal[CompanyFilter] = checkEvents.events
+    .scanLeft(Map[String, Set[String]]()) { (currentMap, event) =>
+      event match {
+        case CheckValueEvent(groupName, value, checked) =>
+          if (checked) currentMap + (groupName -> (currentMap.getOrElse(groupName, Set()) + value))
+          else currentMap + (groupName -> (currentMap.getOrElse(groupName, Set()) - value))
+      } // Signal[Map[String, Set[String]]]
+    }
+    .map { checkMap =>
+      CompanyFilter(
+        locations = checkMap.getOrElse(GROUP_LOCATIONS, Set()).toList,
+        countries = checkMap.getOrElse(GROUP_COUNTRIES, Set()).toList,
+        industries = checkMap.getOrElse(GROUP_INDUSTRIES, Set()).toList,
+        tags = checkMap.getOrElse(GROUP_TAGS, Set()).toList
+      )
+    }
+  // informs company page to re-render
+  val triggerFilters: EventStream[CompanyFilter] = clicks.events.withCurrentValueOf(state)
 
   def apply() =
     div(
@@ -45,6 +67,10 @@ object FilterPanel {
       //),
 
       //child.text <-- possibleFilter.events.map(_.toString),
+      //child.text <-- checkEvents.events.map(_.toString),
+      //child.text <-- state.map(_.toString),
+      child.text <-- triggerFilters.map(_.toString),
+
       cls := "accordion accordion-flush",
       idAttr := "accordionFlushExample",
       div(
@@ -80,14 +106,7 @@ object FilterPanel {
             renderFilterOptions(GROUP_COUNTRIES, _.countries),
             renderFilterOptions(GROUP_INDUSTRIES, _.industries),
             renderFilterOptions(GROUP_TAGS, _.tags),
-            div(
-              cls := "jvm-accordion-search-btn",
-              button(
-                cls := "btn btn-primary",
-                `type` := "button",
-                "Apply Filters"
-              )
-            )
+            renderApplyButton()
           )
         )
       )
@@ -142,8 +161,20 @@ object FilterPanel {
       input(
         cls := "form-check-input",
         `type` := "checkbox",
-        idAttr := s"filter-$groupName-$value"
+        idAttr := s"filter-$groupName-$value",
+        onChange.mapToChecked.map(CheckValueEvent(groupName, value, _))  --> checkEvents
       )
     )
 
+  def renderApplyButton() =
+    div(
+      cls := "jvm-accordion-search-btn",
+      button(
+        disabled <-- dirty.toSignal(false).map(v => !v),
+        onClick.mapTo(()) --> clicks,
+        cls := "btn btn-primary",
+        `type` := "button",
+        "Apply Filters"
+      )
+    )
 }

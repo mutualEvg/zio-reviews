@@ -13,6 +13,7 @@ trait CompanyRepository {
   def getBySlug(slug: String): Task[Option[Company]]
   def get: Task[List[Company]]
   def uniqueAttributes: Task[CompanyFilter]
+  def search(filter: CompanyFilter): Task[List[Company]]
 }
 
 class CompanyRepositoryLive private (quill: Quill.Postgres[SnakeCase]) extends CompanyRepository {
@@ -71,6 +72,46 @@ class CompanyRepositoryLive private (quill: Quill.Postgres[SnakeCase]) extends C
       industries <- run(query[Company].map(_.industry).distinct).map(_.flatMap(_.toList))
       tags       <- run(query[Company].map(_.tags)).map(_.flatten.toSet.toList)
     } yield CompanyFilter(locations, countries, industries, tags)
+
+  /** select company from companies where location in filter.locations or country in ... or industry in ... or tags in
+    * (select cl.tags from companies where cl.id == company.id)
+    */
+
+  override def search(filter: CompanyFilter): Task[List[Company]] =
+    if (filter.isEmpty) get
+    else
+      run {
+        query[Company]
+          .filter {
+            company =>
+              liftQuery(filter.locations.toSet).contains(company.location) ||
+              liftQuery(filter.countries.toSet).contains(company.country) ||
+              liftQuery(filter.industries.toSet).contains(company.industry) ||
+              sql"${company.tags} && ${lift(filter.tags)}".asCondition
+            //liftQuery(filter.tags.toSet).filter(t => company.tags.contains(t)).nonEmpty
+          }
+      }
+      /* override def search(filter: CompanyFilter): Task[List[Company]] =
+    if (filter.isEmpty) get
+    else
+      run {
+        query[Company]
+          .filter {
+            company =>
+              liftQuery(filter.locations.toSet).contains(company.location) ||
+              liftQuery(filter.countries.toSet).contains(company.country) ||
+              liftQuery(filter.industries.toSet).contains(company.industry) ||
+//              query[Company]
+//                .filter(_.id == company.id)
+//                .concatMap(_.tags) // List[String]
+//                .filter(
+//                  tag => liftQuery(filter.tags.toSet).contains(tag)
+//                )
+//                .nonEmpty
+                liftQuery(filter.tags.toSet).filter(t => company.tags.contains(t)).nonEmpty
+
+          }
+      }*/
 
 }
 

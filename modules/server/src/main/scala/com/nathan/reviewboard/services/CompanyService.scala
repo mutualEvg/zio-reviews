@@ -17,7 +17,7 @@ trait CompanyService {
   def getById(id: Long): Task[Option[Company]]
   def getBySlug(slug: String): Task[Option[Company]]
   def allFilters: Task[CompanyFilter]
-
+  def search(filter: CompanyFilter): Task[List[Company]]
 }
 // FIXME can be removed if required
 //object CompanyService {
@@ -38,6 +38,9 @@ class CompanyServiceLive private(repo: CompanyRepository) extends CompanyService
     repo.getBySlug(slug)
 
   override def allFilters: Task[CompanyFilter] = repo.uniqueAttributes
+
+  override def search(filter: CompanyFilter): Task[List[Company]] =
+    repo.search(filter)
 }
 object CompanyServiceLive {
   val layer = ZLayer {

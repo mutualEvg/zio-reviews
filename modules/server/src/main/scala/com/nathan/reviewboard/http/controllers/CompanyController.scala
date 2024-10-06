@@ -65,8 +65,12 @@ class CompanyController private (service: CompanyService, jwtService: JWTService
       service.allFilters.either
     }
 
+  val search: ServerEndpoint[Any, Task] =
+    searchEndpoint.serverLogic { filter =>
+      service.search(filter).either
+    }
 
-  override val routes: List[ServerEndpoint[Any, Task]] = List(create, getAll, allFilters, getById)
+  override val routes: List[ServerEndpoint[Any, Task]] = List(create, getAll, allFilters, search, getById)
 }
 object CompanyController {
   //val makeZIO = ZIO.succeed(new CompanyController)

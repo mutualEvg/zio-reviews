@@ -9,6 +9,7 @@ import sttp.client3.*
 
 object CompaniesPage {
 
+  val filterPanel = new FilterPanel()
   val dummyCompany = Company(
     1L,
     "dummy-company",
@@ -21,18 +22,24 @@ object CompaniesPage {
     List("space", "scala")
   )
 
-  val companiesBus = EventBus[List[Company]]()
+  val companyEvents: EventStream[List[Company]] =
+    useBackend(_.company.getAllEndpoint(())).toEventStream.mergeWith {
+      filterPanel.triggerFilters.flatMap { newFilter =>
+        useBackend(_.company.searchEndpoint(newFilter)).toEventStream
+      }
+    }
 
-  def performBackendCall(): Unit = {
-    val companiesZIO = useBackend(_.company.getAllEndpoint(()))
-    companiesZIO.emitTo(companiesBus)
-  }
+
+  //  val companiesBus = EventBus[List[Company]]()
+//
+//  def performBackendCall(): Unit = {
+//    val companiesZIO = useBackend(_.company.getAllEndpoint(()))
+//    companiesZIO.emitTo(companiesBus)
+//  }
 
   def apply() =
     sectionTag(
-      onMountCallback(
-        _ => performBackendCall()
-      ),
+      //onMountCallback(_ => performBackendCall()),
       cls := "section-1",
       div(
         cls := "container company-list-hero",
@@ -47,11 +54,17 @@ object CompaniesPage {
           cls := "row jvm-recent-companies-body",
           div(
             cls := "col-lg-4",
-            FilterPanel()
+            filterPanel()
           ),
           div(
             cls := "col-lg-8",
-            children <-- companiesBus.events.map {
+//            children <-- companiesBus.events.map {
+//              _.map {
+//                comp =>
+//                  println(s"comp = $comp")
+//                  renderCompany(comp)
+//              }
+            children <-- companyEvents.map {
               _.map {
                 comp =>
                   println(s"comp = $comp")

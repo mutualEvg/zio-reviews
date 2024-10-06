@@ -43,7 +43,25 @@ object CompanyServiceSpec extends ZIOSpecDefault {
     override def get: Task[List[Company]] =
       ZIO.succeed(db.values.toList)
 
-    override def uniqueAttributes: Task[CompanyFilter] = ZIO.succeed(CompanyFilter())
+    //override def uniqueAttributes: Task[CompanyFilter] = ZIO.succeed(CompanyFilter())
+
+    override def uniqueAttributes: Task[CompanyFilter] = ZIO.succeed {
+      val companies = db.values
+      val locations = companies.flatMap(_.location.toList).toSet.toList
+      val countries = companies.flatMap(_.country.toList).toSet.toList
+      val industries = companies.flatMap(_.industry.toList).toSet.toList
+      val tags = companies.flatMap(_.tags).toSet.toList
+      CompanyFilter(locations, countries, industries, tags)
+    }
+
+    override def search(filter: CompanyFilter): Task[List[Company]] = ZIO.succeed {
+      db.values.toList.filter { company =>
+        filter.locations.toSet.intersect(company.location.toSet).nonEmpty ||
+          filter.countries.toSet.intersect(company.country.toSet).nonEmpty ||
+          filter.industries.toSet.intersect(company.industry.toSet).nonEmpty ||
+          filter.tags.toSet.intersect(company.tags.toSet).nonEmpty
+      }
+    }
   })
 
   override def spec: Spec[TestEnvironment & Scope, Any] =

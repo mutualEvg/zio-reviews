@@ -37,6 +37,8 @@ object CompanyControllerSpec extends ZIOSpecDefault {
     )
 
     override def allFilters: Task[CompanyFilter] = ZIO.succeed(CompanyFilter())
+
+    override def search(filter: CompanyFilter): Task[List[Company]] = ZIO.succeed(List(rzk))
   }
   private def backendStubZIO(endpointFun: CompanyController => ServerEndpoint[Any, Task]) =
     for {

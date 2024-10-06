@@ -14,11 +14,13 @@ target/
 *.cache
 project/project
 project/target
+project/target/config-classes
 
 # Ignore IntelliJ IDEA project files
 .idea/
 
 # Ignore Visual Studio Code metadata
 .vscode/
-./project/target/
+./project/target
+./project/target/config-classes
 .bsp
