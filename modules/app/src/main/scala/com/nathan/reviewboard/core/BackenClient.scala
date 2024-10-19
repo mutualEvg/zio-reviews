@@ -1,7 +1,7 @@
 package com.nathan.reviewboard.core
 
 import com.nathan.reviewboard.config.BackendClientConfig
-import com.nathan.reviewboard.http.endpoints.CompanyEndpoints
+import com.nathan.reviewboard.http.endpoints.{CompanyEndpoints, UserEndpoints}
 import sttp.capabilities.WebSockets
 import sttp.capabilities.zio.ZioStreams
 import sttp.client3.impl.zio.FetchZioBackend
@@ -12,6 +12,7 @@ import zio.{Task, ZIO, ZLayer}
 
 trait BackendClient {
   val company: CompanyEndpoints
+  val user: UserEndpoints
   def endpointRequestZIO[I, E <: Throwable, O](endpoint: Endpoint[Unit, I, E, O, Any])(payload: I): Task[O]
 }
 
@@ -21,6 +22,7 @@ class BackendClientLive(
     config: BackendClientConfig
 ) extends BackendClient {
   override val company: CompanyEndpoints = new CompanyEndpoints {}
+  override val user: UserEndpoints = new UserEndpoints {}
   private def endpointRequest[I, E, O](
       endpoint: Endpoint[Unit, I, E, O, Any]
   ): I => Request[Either[E, O], Any] =

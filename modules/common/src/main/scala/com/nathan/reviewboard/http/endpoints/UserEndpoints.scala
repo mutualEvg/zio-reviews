@@ -1,7 +1,14 @@
 package com.nathan.reviewboard.http.endpoints
 
 import com.nathan.reviewboard.domain.data.UserToken
-import com.nathan.reviewboard.http.requests.{DeleteAccountRequest, ForgotPasswordRequest, LoginRequest, RecoverPasswordRequest, RegisterUserAccount, UpdatePasswordRequest}
+import com.nathan.reviewboard.http.requests.{
+  DeleteAccountRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  RecoverPasswordRequest,
+  RegisterUserAccount,
+  UpdatePasswordRequest
+}
 import com.nathan.reviewboard.http.responses.UserResponse
 import sttp.tapir.*
 import sttp.tapir.json.zio.*
@@ -77,4 +84,3 @@ trait UserEndpoints extends BaseEndpoint {
       .in(jsonBody[RecoverPasswordRequest])
   
 }
-
