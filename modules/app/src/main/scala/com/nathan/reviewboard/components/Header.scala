@@ -5,6 +5,8 @@ import com.raquo.laminar.codecs.*
 import org.scalajs.dom
 import frontroute.*
 import com.nathan.reviewboard.common.Constants.*
+import com.nathan.reviewboard.core.*
+import com.nathan.reviewboard.domain.data.UserToken
 
 object Header {
 
@@ -37,7 +39,8 @@ object Header {
                 ul(
                   cls := "navbar-nav ms-auto menu align-center expanded text-center SMN_effect-3",
                   // TODO children
-                  renderNavLinks()
+                  //renderNavLinks()
+                  children <-- Session.userState.signal.map(renderNavLinks)
                 )
               )
             )
@@ -60,11 +63,30 @@ object Header {
   // link for companies, link for login and link for sign up
   // list of <li> tags
   // Companies, Log In, Sign Up
-  private def renderNavLinks() = List(
-    renderNavLink("Companies", "/companies"),
-    renderNavLink("Log In", "/login"),
-    renderNavLink("Sign Up", "/signup")
-  )
+  // Companies, Log In, Sign up
+  private def renderNavLinks(maybeUser: Option[UserToken]) = {
+    val constantLinks = List(
+      renderNavLink("Companies", "/companies")
+    )
+
+    val unauthedLinks = List(
+      renderNavLink("Log In", "/login"),
+      renderNavLink("Sign Up", "/signup")
+    )
+
+    val authedLinks = List(
+      renderNavLink("Add Company", "/post"),
+      renderNavLink("Profile", "/profile"),
+      renderNavLink("Log Out", "/logout")
+    )
+
+    val customLinks = if (maybeUser.nonEmpty) authedLinks
+    else unauthedLinks
+
+    constantLinks ++ customLinks
+
+  }
+
 
   private def renderNavLink(text: String, location: String) =
     li(

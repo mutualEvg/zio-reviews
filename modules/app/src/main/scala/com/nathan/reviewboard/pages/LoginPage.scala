@@ -14,6 +14,7 @@ import com.nathan.reviewboard.components.*
 import com.nathan.reviewboard.domain.data.*
 import com.raquo.laminar.api.L.{*, given}
 import sttp.client3.*
+import com.nathan.reviewboard.core.*
 
 object LoginPage {
 
@@ -56,9 +57,9 @@ object LoginPage {
         useBackend(_.user.loginEndpoint(LoginRequest(state.email, state.password)))
           .map {
             userToken =>
-              // todo add user token here 
-            println(s"userToken = $userToken")
-            stateVar.set(State())
+              Session.setUserState(userToken)
+              println(s"userToken = $userToken")
+              stateVar.set(State())
               BrowserNavigation.replaceState("/")
           }
           .tapError {

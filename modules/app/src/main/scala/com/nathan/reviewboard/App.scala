@@ -10,6 +10,7 @@ import com.raquo.airstream.ownership.OneTimeOwner
 import scala.scalajs.js.timers.*
 import com.raquo.laminar.api.features.unitArrows
 import com.nathan.reviewboard.components.*
+import com.nathan.reviewboard.core.*
 import frontroute.LinkHandler
 
 
@@ -22,6 +23,7 @@ import frontroute.LinkHandler
 object App {
 
   val app = div(
+    onMountCallback(_ => Session.loadUserState()),
     Header(),
     Router()
   ).amend(LinkHandler.bind) // amend for internal links
