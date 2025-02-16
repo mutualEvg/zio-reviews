@@ -99,34 +99,37 @@ object LoginPage {
             nameAttr := "signin",
             cls      := "form",
             idAttr   := "form",
-            // an input of type text
-            renderInput(
-              "Email",
-              "email-input",
-              "text",
-              true,
-              "Your email",
-              (s, e) => s.copy(email = e, showStatus = false, upstreamError = None)
-            ),
-            renderInput(
-              "Password",
-              "password-input",
-              "password",
-              true,
-              "Your password",
-              (s, p) => s.copy(password = p, showStatus = false, upstreamError = None)
-            ),
-            // an input of type password
-            button(
-              `type` := "button",
-              "Log In",
-              onClick.preventDefault.mapTo(stateVar.now()) --> submitter
-            )
+            renderChildren()
           )
         )
       )
     )
   }
+  def renderChildren() = List(
+    // an input of type text
+    renderInput(
+      "Email",
+      "email-input",
+      "text",
+      true,
+      "Your email",
+      (s, e) => s.copy(email = e, showStatus = false, upstreamError = None)
+    ),
+    renderInput(
+      "Password",
+      "password-input",
+      "password",
+      true,
+      "Your password",
+      (s, p) => s.copy(password = p, showStatus = false, upstreamError = None)
+    ),
+    // an input of type password
+    button(
+      `type` := "button",
+      "Log In",
+      onClick.preventDefault.mapTo(stateVar.now()) --> submitter
+    )
+  ) 
   def renderError(error: String) =
     div(
       cls := "page-status-errors",
