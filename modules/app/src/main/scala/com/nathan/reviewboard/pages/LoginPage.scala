@@ -12,35 +12,32 @@ import zio.ZIO
 import com.nathan.reviewboard.common.Constants.companyLogoPlaceholder
 import com.nathan.reviewboard.components.*
 import com.nathan.reviewboard.domain.data.*
-import com.raquo.laminar.api.L.{*, given}
+import com.raquo.laminar.api.L.{given, *}
 import sttp.client3.*
 import com.nathan.reviewboard.core.*
 
-object LoginPage {
+case class LoginFormState(
+    email: String = "",
+    password: String = "",
+    upstreamError: Option[String] = None,
+    override val showStatus: Boolean = false
+) extends FormState {
+  private val userEmailError: Option[String] =
+    Option.when(!email.matches(emailRegex))("User email is invalid")
+  private val passwordError: Option[String] =
+    Option.when(password.isEmpty)("Password can't be empty")
 
-  case class State(
-      email: String = "",
-      password: String = "",
-      upstreamError: Option[String] = None,
-      showStatus: Boolean = false
-  ) {
-    val userEmailError: Option[String] =
-      Option.when(!email.matches(emailRegex))("User email is invalid")
-    val passwordError: Option[String] =
-      Option.when(password.isEmpty)("Password can't be empty")
+  override val errorList = List(userEmailError, passwordError, upstreamError)
+  //val maybeError = errorList.find(_.isDefined).flatten.filter(_ => showStatus)
+  //val hasErrors = errorList.exists(_.isDefined)
 
-    val errorList = List(userEmailError, passwordError, upstreamError)
-    val maybeError = errorList
-      .find(_.isDefined)
-      .flatten
-      .filter(
-        _ => showStatus
-      )
-    val hasErrors = errorList.exists(_.isDefined)
-  }
+  override def maybeSuccess: Option[String] = None
+}
 
-  val stateVar = Var(State())
-  val submitter = Observer[State] {
+object LoginPage extends FormPage[LoginFormState]("Log In") {
+
+  override val stateVar = Var(LoginFormState())
+  val submitter = Observer[LoginFormState] {
     state =>
       //println(s"State = $state")
       dom.console.log(s"Current state is: $state")
@@ -59,7 +56,7 @@ object LoginPage {
             userToken =>
               Session.setUserState(userToken)
               println(s"userToken = $userToken")
-              stateVar.set(State())
+              stateVar.set(LoginFormState())
               BrowserNavigation.replaceState("/")
           }
           .tapError {
@@ -69,42 +66,7 @@ object LoginPage {
           .runJs
       }
   }
-
-  def apply() = { //div("login page")
-    div(
-      cls := "row",
-      div(
-        cls := "col-md-5 p-0",
-        div(
-          cls := "logo",
-          img(
-            //cls := "home-logo",
-            src := logoImageBig,
-            alt := "Star"
-          )
-        )
-      ),
-      div(
-        cls := "col-md-7",
-        // right
-        div(
-          cls := "form-section",
-          div(cls := "top-section", h1(span("Log In"))),
-          children <-- stateVar.signal
-            .map(_.maybeError)
-            .map(_.map(renderError))
-            .map(_.toList),
-          maybeRenderSuccess(),
-          form(
-            nameAttr := "signin",
-            cls      := "form",
-            idAttr   := "form",
-            renderChildren()
-          )
-        )
-      )
-    )
-  }
+  
   def renderChildren() = List(
     // an input of type text
     renderInput(
@@ -129,50 +91,50 @@ object LoginPage {
       "Log In",
       onClick.preventDefault.mapTo(stateVar.now()) --> submitter
     )
-  ) 
-  def renderError(error: String) =
-    div(
-      cls := "page-status-errors",
-      error
-    )
-  def maybeRenderSuccess(shouldShow: Boolean = false) =
-    if (shouldShow)
-      div(
-        cls := "page-status-success",
-        //"This is a success",
-        child.text <-- stateVar.signal.map(_.toString)
-      )
-    else div()
-    
-  def renderInput(
-      name: String,
-      uid: String = "form-id-1-todo",
-      kind: String,
-      required: Boolean = false,
-      plcHolder: String = "empty",
-      updateFn: (State, String) => State
-  ) = {
-    div(
-      cls := "row",
-      div(
-        cls := "col-md-12",
-        div(
-          cls := "form-input",
-          label(
-            forId := uid,
-            cls   := "form-label",
-            if (required) span("*") else span(),
-            name
-          ),
-          input(
-            `type`      := kind,
-            cls         := "form-control",
-            idAttr      := uid,
-            placeholder := plcHolder,
-            onInput.mapToValue --> stateVar.updater(updateFn)
-          )
-        )
-      )
-    )
-  }
+  )
+//  def renderError(error: String) =
+//    div(
+//      cls := "page-status-errors",
+//      error
+//    )
+//  def maybeRenderSuccess(shouldShow: Boolean = false) =
+//    if (shouldShow)
+//      div(
+//        cls := "page-status-success",
+//        //"This is a success",
+//        child.text <-- stateVar.signal.map(_.toString)
+//      )
+//    else div()
+//
+//  def renderInput(
+//      name: String,
+//      uid: String = "form-id-1-todo",
+//      kind: String,
+//      required: Boolean = false,
+//      plcHolder: String = "empty",
+//      updateFn: (LoginFormState, String) => LoginFormState
+//  ) = {
+//    div(
+//      cls := "row",
+//      div(
+//        cls := "col-md-12",
+//        div(
+//          cls := "form-input",
+//          label(
+//            forId := uid,
+//            cls   := "form-label",
+//            if (required) span("*") else span(),
+//            name
+//          ),
+//          input(
+//            `type`      := kind,
+//            cls         := "form-control",
+//            idAttr      := uid,
+//            placeholder := plcHolder,
+//            onInput.mapToValue --> stateVar.updater(updateFn)
+//          )
+//        )
+//      )
+//    )
+//  }
 }

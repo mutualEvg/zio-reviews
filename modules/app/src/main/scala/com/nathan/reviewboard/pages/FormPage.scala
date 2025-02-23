@@ -22,7 +22,6 @@ trait FormState {
 
   def maybeError = errorList.find(_.isDefined).flatten
   def hasErrors  = errorList.exists(_.isDefined)
-
   def maybeStatus: Option[Either[String, String]] =
     maybeError.map(Left(_)).orElse(maybeSuccess.map(Right(_))).filter(_ => showStatus)
 }
@@ -84,10 +83,10 @@ abstract class FormPage[S <: FormState](title: String) {
           cls := "form-section",
           div(cls := "top-section", h1(span(title))),
           children <-- stateVar.signal
-            .map(_.maybeError)
-            .map(_.map(renderError))
+            .map(_.maybeStatus)
+            .map(renderStatus)
             .map(_.toList),
-          maybeRenderSuccess(),
+//          renderChildren(),
           form(
             nameAttr := "signin",
             cls      := "form",
@@ -134,7 +133,8 @@ abstract class FormPage[S <: FormState](title: String) {
     case Right(message) =>
       div(
         cls := "page-status-success",
-        child.text <-- stateVar.signal.map(_.toString)
+        //child.text <-- stateVar.signal.map(_.toString)
+        message
       )
   }
 
