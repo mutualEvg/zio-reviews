@@ -90,6 +90,11 @@ object LoginPage extends FormPage[LoginFormState]("Log In") {
       `type` := "button",
       "Log In",
       onClick.preventDefault.mapTo(stateVar.now()) --> submitter
+    ),
+    Anchors.renderNavLink(
+      "Forgot password",
+      "/forgot",
+      "auth-link"
     )
   )
 //  def renderError(error: String) =

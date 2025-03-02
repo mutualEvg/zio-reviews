@@ -24,6 +24,9 @@ object Router {
           path("profile") {
             ProfilePage()
           },
+          path("forgot") {
+            ForgotPasswordPage()
+          },
           path("logout") {
             LogoutPage()
           },
