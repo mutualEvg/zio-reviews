@@ -35,8 +35,20 @@ trait UserEndpoints extends BaseEndpoint {
       .name("update password")
       .description("Update user password")
       .in("users" / "password")
+      .put  // Using PUT since we're updating
       .in(jsonBody[UpdatePasswordRequest])
       .out(jsonBody[UserResponse])
+
+  // A regular (non-secure) version of the update password endpoint for testing
+//  val updatePasswordEndpointAsRegular =
+//    baseEndpoint  // Use baseEndpoint which includes your standard error handling
+//      .tag("Users")
+//      .name("update password (non-secure)")
+//      .description("Update user password (non-secure version for testing)")
+//      .in("users" / "password-test")  // Different path to avoid conflicts
+//      .put
+//      .in(jsonBody[UpdatePasswordRequest])
+//      .out(jsonBody[UserResponse])
 
   // DELETE /users { email, password } -> { email }
   // TODO - should ba an authorized endpoint (JWT)
@@ -82,5 +94,4 @@ trait UserEndpoints extends BaseEndpoint {
       .in("users" / "recover")
       .post
       .in(jsonBody[RecoverPasswordRequest])
-  
 }

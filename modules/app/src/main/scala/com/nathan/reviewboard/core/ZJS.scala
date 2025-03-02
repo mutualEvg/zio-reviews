@@ -47,6 +47,6 @@ object ZJS {
       ZIO
         .service[BackendClient]
         .flatMap(_.secureEndpointRequestZIO(endpoint)(payload))
-        .provide(BackendClientLive.configuredLayer)
+        .provide(configuredLayer)
 
 }
