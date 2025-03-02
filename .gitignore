@@ -22,6 +22,7 @@ project/target/config-classes
 # Ignore Visual Studio Code metadata
 .vscode/
 ./project/target
+./project/target/
 ./project/project
 ./project/target/config-classes
 .bsp
