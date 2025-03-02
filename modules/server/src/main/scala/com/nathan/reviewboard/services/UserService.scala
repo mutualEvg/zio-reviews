@@ -1,6 +1,7 @@
 package com.nathan.reviewboard.services
 
 import com.nathan.reviewboard.domain.data.{User, UserToken}
+import com.nathan.reviewboard.domain.errors.UnauthorizedException
 import com.nathan.reviewboard.repositories.{RecoveryTokensRepository, UserRepository}
 import zio.*
 
@@ -57,7 +58,7 @@ class UserServiceLive private (
     for {
       existingUser <- userRepo
         .getByEmail(email)
-        .someOrFail(new RuntimeException(s"cannot verify user $email: inexistent"))
+        .someOrFail(UnauthorizedException(s"User $email: doesn't exist"))
       verified <- ZIO.attempt(
         UserServiceLive.Hasher.validateHash(oldPassword, existingUser.hashedPassword)
       )
@@ -74,7 +75,7 @@ class UserServiceLive private (
     for {
       existingUser <- userRepo
         .getByEmail(email)
-        .someOrFail(new RuntimeException(s"cannot verify user $email: inexistent"))
+        .someOrFail(UnauthorizedException(s"User $email: doesn't exist"))
       verified <- ZIO.attempt(
         UserServiceLive.Hasher.validateHash(password, existingUser.hashedPassword)
       )
@@ -89,7 +90,7 @@ class UserServiceLive private (
     for {
       existingUser <- userRepo
         .getByEmail(email)
-        .someOrFail(new RuntimeException(s"cannot verify user $email: inexistent"))
+        .someOrFail(UnauthorizedException(s"User $email: doesn't exist"))
       verified <- ZIO.attempt(
         UserServiceLive.Hasher.validateHash(password, existingUser.hashedPassword)
       )

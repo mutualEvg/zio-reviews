@@ -34,7 +34,8 @@ case class RecoverPasswordState(
 
 object RecoverPasswordPage extends FormPage[RecoverPasswordState]("Reset Password") {
 
-  override val stateVar: Var[RecoverPasswordState] = Var(RecoverPasswordState())
+  //override val stateVar: Var[RecoverPasswordState] = Var(RecoverPasswordState())
+  override def basicState: RecoverPasswordState = RecoverPasswordState()
 
   override def renderChildren(): List[ReactiveHtmlElement[Element]] = List(
     renderInput(

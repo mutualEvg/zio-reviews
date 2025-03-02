@@ -29,9 +29,13 @@ trait FormState {
 
 abstract class FormPage[S <: FormState](title: String) {
 
-  val stateVar: Var[S]
+  //val stateVar: Var[S]
   def renderChildren(): List[ReactiveHtmlElement[dom.html.Element]]
 
+  def basicState: S
+
+  val stateVar: Var[S] = Var(basicState)
+  
   //  val submitter = Observer[FormState] {
 //    state =>
 //      //println(s"State = $state")
@@ -64,6 +68,7 @@ abstract class FormPage[S <: FormState](title: String) {
 
   def apply() = { //div("login page")
     div(
+      onUnmountCallback(_ => stateVar.set(basicState)),
       cls := "row",
       div(
         cls := "col-md-5 p-0",

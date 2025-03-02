@@ -27,7 +27,9 @@ case class ForgotPasswordState(
 }
 
 object ForgotPasswordPage extends FormPage[ForgotPasswordState]("Forgot password") {
-  override val stateVar: Var[ForgotPasswordState]                   = Var(ForgotPasswordState())
+  //override val stateVar: Var[ForgotPasswordState]                   = Var(ForgotPasswordState())
+  override def basicState = ForgotPasswordState()
+
   override def renderChildren() = List(
     renderInput(
       "Email",

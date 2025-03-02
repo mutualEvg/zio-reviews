@@ -36,7 +36,8 @@ case class SignUpFormState(
 
 object SignUpPage extends FormPage[SignUpFormState]("Sign Up") {
 
-  override val stateVar: Var[SignUpFormState] = Var(SignUpFormState())
+  //override val stateVar: Var[SignUpFormState] = Var(SignUpFormState())
+  override def basicState: SignUpFormState = SignUpFormState()
 
   override def renderChildren(): List[ReactiveHtmlElement[html.Element]] = List(
     renderInput(
