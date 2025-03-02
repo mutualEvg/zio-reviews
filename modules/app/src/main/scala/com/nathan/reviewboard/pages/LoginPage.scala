@@ -9,7 +9,6 @@ import com.nathan.reviewboard.common.Constants.*
 import com.nathan.reviewboard.core.ZJS.*
 import com.nathan.reviewboard.http.requests.LoginRequest
 import zio.ZIO
-import com.nathan.reviewboard.common.Constants.companyLogoPlaceholder
 import com.nathan.reviewboard.components.*
 import com.nathan.reviewboard.domain.data.*
 import com.raquo.laminar.api.L.{given, *}

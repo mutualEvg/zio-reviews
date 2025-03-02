@@ -10,6 +10,7 @@ import zio.*
 import com.nathan.reviewboard.core.ZJS.*
 import com.nathan.reviewboard.core.*
 import com.nathan.reviewboard.http.requests._
+import com.nathan.reviewboard.components.*
 
 case class ForgotPasswordState(
     email: String = "",
@@ -40,6 +41,11 @@ object ForgotPasswordPage extends FormPage[ForgotPasswordState]("Forgot password
       `type` := "button",
       "Recover Password",
       onClick.preventDefault.mapTo(stateVar.now()) --> submitter
+    ),
+    Anchors.renderNavLink(
+      "Have a password recovery token?",
+      "/recover",
+      "auth-link"
     )
   )
 
