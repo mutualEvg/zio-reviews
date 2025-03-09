@@ -98,24 +98,95 @@ class UserServiceLive private (
     } yield maybeToken
 
   // password recovery flow
-  override def sendPasswordRecoveryToken(email: String): Task[Unit] =
+  /*override def sendPasswordRecoveryToken(email: String): Task[Unit] =
     tokenRepo.getToken(email).flatMap {
       case Some(token) => emailService.sendPasswordRecoveryEmail(email, token)
       case None        => ZIO.unit
-    }
+    }*/
 
+  //FIXME REMOVE LOGGING
+  // Corrected implementation for your repository structure
+  // For sending a recovery token, use createOrRefreshToken
+  override def sendPasswordRecoveryToken(email: String): Task[Unit] =
+    for {
+      _ <- ZIO.logInfo(s"Generating password recovery token for: $email")
+
+      tokenOpt <- tokenRepo.createOrRefreshToken(email).tap {
+        tokenOpt =>
+          ZIO.logInfo(s"Token created: ${tokenOpt.isDefined} for $email")
+      }
+
+      _ <- tokenOpt match {
+        case Some(token) =>
+          ZIO.logInfo(s"Sending recovery email with token to: $email") *>
+            emailService
+              .sendPasswordRecoveryEmail(email, token)
+              .tap(
+                _ => ZIO.logInfo(s"Recovery email sent to: $email")
+              )
+        case None =>
+          ZIO.logWarning(s"No token generated for: $email - user likely doesn't exist") *>
+            ZIO.unit
+      }
+    } yield ()
+
+  //FIXME REMOVE LOGGING
+  // For recovery, use getExistingToken for logging/debugging only
   override def recoverPasswordFromToken(
       email: String,
       token: String,
       newPassword: String
   ): Task[Boolean] =
     for {
-      existingUser <- userRepo.getByEmail(email).someOrFail(new RuntimeException("Non-existent user"))
-      tokenIsValid <- tokenRepo.checkToken(email, token)
-      result <- userRepo
-        .update(existingUser.id, user => user.copy(hashedPassword = UserServiceLive.Hasher.generateHash(newPassword)))
-        .when(tokenIsValid)
-        .map(_.nonEmpty)
+      _ <- ZIO.logInfo(s"Starting password recovery for: $email")
+
+      // Only for debugging
+      existingToken <- tokenRepo.getExistingToken(email).tap {
+        tokenOpt =>
+          ZIO.logInfo(s"Existing token found: ${tokenOpt.isDefined} for $email")
+      }
+      _ <- ZIO.logInfo(s"Found token: ${existingToken.getOrElse("none")} for email: $email")
+      _ <- ZIO.logInfo(s"Requested token: $token")
+      _ <- ZIO.logInfo(s"Token match: ${existingToken.contains(token)}")
+
+      // Get the user
+      existingUser <- userRepo
+        .getByEmail(email)
+        .tap(
+          userOpt => ZIO.logInfo(s"User exists: ${userOpt.isDefined} for $email")
+        )
+        .someOrFail(new RuntimeException("Non-existent user"))
+      _ <- ZIO.logInfo(s"Found user with ID: ${existingUser.id}")
+
+      // Use checkToken which should not create a new token
+      tokenIsValid <- tokenRepo
+        .checkToken(email, token)
+        .tap(
+          valid => ZIO.logInfo(s"Token validation result: $valid for $email")
+        )
+
+      // Log decision
+      _ <- ZIO.when(tokenIsValid)(
+        ZIO.logInfo(s"Token is valid, will update password for: $email")
+      )
+      _ <- ZIO.when(!tokenIsValid)(
+        ZIO.logWarning(s"Token is invalid, won't update password for: $email")
+      )
+
+      // Update if valid
+      updateOpt <- ZIO.when(tokenIsValid) {
+        userRepo
+          .update(
+            existingUser.id,
+            user => user.copy(hashedPassword = UserServiceLive.Hasher.generateHash(newPassword))
+          )
+          .tap(
+            _ => ZIO.logInfo(s"Password updated successfully for: $email")
+          )
+      }
+
+      result = updateOpt.isDefined
+      _ <- ZIO.logInfo(s"Password recovery result for $email: $result")
     } yield result
 
 }

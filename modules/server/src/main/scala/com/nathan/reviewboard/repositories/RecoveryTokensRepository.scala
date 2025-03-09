@@ -13,6 +13,8 @@ import io.getquill.jdbczio.Quill
 trait RecoveryTokensRepository {
   def getToken(email: String): Task[Option[String]]
   def checkToken(email: String, token: String): Task[Boolean]
+  def getExistingToken(email: String): Task[Option[String]]
+  def createOrRefreshToken(email: String): Task[Option[String]]
 }
 class RecoveryTokensRepositoryLive private (
     recoveryToken: RecoveryTokensConfig,
@@ -25,7 +27,9 @@ class RecoveryTokensRepositoryLive private (
   inline given insMeta: InsertMeta[PasswordRecoveryToken]     = insertMeta[PasswordRecoveryToken]()
   inline given upMeta: UpdateMeta[PasswordRecoveryToken]      = updateMeta[PasswordRecoveryToken](_.email)
 
-  private val tokenDuration = 600 // TODO pass this from config
+  //todo use config
+  // 10 minutes in milliseconds
+  private val tokenDuration = 10 * 60 * 1000 // 600,000 milliseconds
 
   private def randomUppercaseString(len: Int): Task[String] =
     ZIO.succeed(scala.util.Random.alphanumeric.take(len).mkString.toUpperCase)
@@ -85,23 +89,51 @@ class RecoveryTokensRepositoryLive private (
   override def checkToken(email: String, token: String): Task[Boolean] =
     for {
       now <- Clock.instant
+      nowMillis = now.toEpochMilli
+
+      // Get the actual token for debugging
+      storedTokenOpt <- run(
+        query[PasswordRecoveryToken].filter(
+          r => r.email == lift(email)
+        )
+      ).map(_.headOption)
+
+      // Log detailed info about what we find
+      _ <- ZIO.logInfo(s"""Token check for $email:
+                          |Provided token: $token
+                          |Found token: ${storedTokenOpt.map(_.token).getOrElse("none")}
+                          |Token match: ${storedTokenOpt.exists(_.token == token)}
+                          |Current time: $nowMillis
+                          |Expiration: ${storedTokenOpt.map(_.expiration).getOrElse("none")}
+                          |Still valid: ${storedTokenOpt.exists(_.expiration > nowMillis)}""".stripMargin)
+
+      // Standard check logic
       checkValid <- run(
         query[PasswordRecoveryToken]
-          .filter(r =>
-            r.email == lift(email) && r.token == lift(token) && r.expiration > lift(
-              now.toEpochMilli
-            )
+          .filter(
+            r => r.email == lift(email) && r.token == lift(token) && r.expiration > lift(nowMillis)
           )
       ).map(_.nonEmpty)
     } yield checkValid
 
+  // Add this method to get an existing token without creating a new one
+  def getExistingToken(email: String): Task[Option[String]] =
+    findToken(email)
 
+  // Rename the current getToken to something more descriptive
+  def createOrRefreshToken(email: String): Task[Option[String]] =
+    userRepo.getByEmail(email).flatMap {
+      case None => ZIO.none
+      case Some(_) => makeFreshToken(email).map(Some(_))
+    }
+
+  // Then update all references to getToken in your code to use the appropriate method
 }
 
 object RecoveryTokensRepositoryLive {
   val layer = ZLayer {
     for {
-      config <- ZIO.service[RecoveryTokensConfig]
+      config   <- ZIO.service[RecoveryTokensConfig]
       quill    <- ZIO.service[Quill.Postgres[SnakeCase.type]]
       userRepo <- ZIO.service[UserRepository]
     } yield new RecoveryTokensRepositoryLive(config, quill, userRepo)
